@@ -1,0 +1,6 @@
+{
+  "name": "FSA Sharknoxza Portal",
+  "description": "Portal resmi komunitas FSA Sharknoxza dengan direktori grup, pengumuman live, daftar mitra, tim kepengurusan, dan jam dunia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
