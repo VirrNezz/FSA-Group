@@ -174,11 +174,12 @@ export const OurGroupPage: React.FC = () => {
 
   return (
     <div 
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20 rounded-3xl bg-cover bg-center bg-no-repeat transition-all duration-500"
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20 min-h-screen rounded-3xl bg-fixed bg-cover bg-center bg-no-repeat transition-all duration-500"
       style={{ 
         backgroundImage: `linear-gradient(to bottom, rgba(3, 7, 18, 0.92), rgba(3, 7, 18, 0.97)), url('${currentBg}')` 
       }}
     >
+
       {/* Page Header */}
       <div className="text-center max-w-3xl mx-auto pt-4">
         <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-400 mb-2">
