@@ -21,7 +21,8 @@ import {
   Clock,
   Phone,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  ImageIcon
 } from 'lucide-react';
 
 export const OurGroupPage: React.FC = () => {
@@ -32,6 +33,15 @@ export const OurGroupPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'closed'>('all');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedGroupModal, setSelectedGroupModal] = useState<CommunityGroup | null>(null);
+
+  // State untuk background custom dari folder public di halaman OurGroup
+  const [currentBg, setCurrentBg] = useState<string>('/backgrounds/Pages.jpeg');
+
+  const backgroundOptions = [
+    { label: 'Cyber HQ', path: '/backgrounds/fsa_cyber_headquarters.jpg' },
+    { label: 'Digital Hub', path: '/backgrounds/community_digital_hub.jpg' },
+    { label: 'Aquatic Lounge', path: '/backgrounds/furry_aquatic_lounge.jpg' }
+  ];
 
   // State untuk Modal Verifikasi Nomor Telepon
   const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -163,7 +173,12 @@ export const OurGroupPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20">
+    <div 
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20 rounded-3xl bg-cover bg-center bg-no-repeat transition-all duration-500"
+      style={{ 
+        backgroundImage: `linear-gradient(to bottom, rgba(3, 7, 18, 0.92), rgba(3, 7, 18, 0.97)), url('${currentBg}')` 
+      }}
+    >
       {/* Page Header */}
       <div className="text-center max-w-3xl mx-auto pt-4">
         <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-400 mb-2">
@@ -175,6 +190,26 @@ export const OurGroupPage: React.FC = () => {
         <p className="mt-3 text-xs sm:text-sm text-slate-300/90 leading-relaxed max-w-2xl mx-auto font-normal">
           {t('groups.subtitle')}
         </p>
+
+        {/* Tombol Pemilih Background Custom dari Folder Public */}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1 mr-1">
+            <ImageIcon className="w-3.5 h-3.5 text-cyan-400" /> Tema BG Public:
+          </span>
+          {backgroundOptions.map((bg, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentBg(bg.path)}
+              className={`px-3 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                currentBg === bg.path
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                  : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/[0.08]'
+              }`}
+            >
+              {bg.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* --- SECTIONS STATUS SELEKSI DARI FIRESTORE --- */}

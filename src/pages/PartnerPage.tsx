@@ -18,7 +18,7 @@ export const PartnerPage: React.FC = () => {
   const [selectedPartner, setSelectedPartner] = useState<CommunityPartner | null>(null);
 
   // State untuk background custom dari folder public di halaman Partner
-  const [currentBg, setCurrentBg] = useState<string>('/backgrounds/Pages.jpg');
+  const [currentBg, setCurrentBg] = useState<string>('/backgrounds/Pages.jpeg');
 
   const backgroundOptions = [
     { label: 'Cyber HQ', path: '/backgrounds/fsa_cyber_headquarters.jpg' },

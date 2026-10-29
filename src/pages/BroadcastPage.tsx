@@ -42,7 +42,7 @@ export const BroadcastPage: React.FC<BroadcastPageProps> = ({ onOpenAdminPanel }
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // State untuk background custom dari folder public di halaman Broadcast
-  const [currentBg, setCurrentBg] = useState<string>('/backgrounds/fsa_cyber_headquarters.jpg');
+  const [currentBg, setCurrentBg] = useState<string>('/backgrounds/Pages.jpeg');
 
   const backgroundOptions = [
     { label: 'Cyber HQ', path: '/backgrounds/fsa_cyber_headquarters.jpg' },

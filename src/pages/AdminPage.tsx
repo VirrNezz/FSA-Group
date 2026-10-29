@@ -32,7 +32,7 @@ export const AdminPage: React.FC = () => {
   const [selectedAdmin, setSelectedAdmin] = useState<AdminProfile | null>(null);
 
   // State untuk background custom dari folder public di halaman Admin
-  const [currentBg, setCurrentBg] = useState<string>('/backgrounds/Pages.jpg');
+  const [currentBg, setCurrentBg] = useState<string>('/backgrounds/Pages.jpeg');
 
   const backgroundOptions = [
     { label: 'Cyber HQ', path: '/backgrounds/fsa_cyber_headquarters.jpg' },
