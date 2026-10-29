@@ -82,13 +82,19 @@ export const BroadcastPage: React.FC<BroadcastPageProps> = ({ onOpenAdminPanel }
     }
   };
 
-  return (
+return (
     <div 
-      className="max-w-4xl mx-auto px-4 sm:px-6 pb-20 space-y-6 rounded-3xl bg-cover bg-center bg-no-repeat transition-all duration-500"
+      className="min-h-screen w-full bg-fixed bg-cover bg-center bg-no-repeat transition-all duration-500 pb-20"
       style={{ 
         backgroundImage: `linear-gradient(to bottom, rgba(3, 7, 18, 0.92), rgba(3, 7, 18, 0.97)), url('${currentBg}')` 
       }}
     >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pt-6">
+        {/* SEMUA KONTEN HALAMAN DI SINI (Header, Grid, Kartu, dll) */}
+      </div>
+    </div>
+  );
+
       {/* Header Info */}
       <div className="text-center max-w-2xl mx-auto pt-4">
         <div className="flex items-center justify-center gap-2 text-xs font-mono tracking-[0.2em] uppercase text-cyan-400 mb-2">

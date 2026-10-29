@@ -172,13 +172,18 @@ export const OurGroupPage: React.FC = () => {
     return matchesFilter && matchesSearch;
   });
 
-  return (
+return (
     <div 
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20 min-h-screen rounded-3xl bg-fixed bg-cover bg-center bg-no-repeat transition-all duration-500"
+      className="min-h-screen w-full bg-fixed bg-cover bg-center bg-no-repeat transition-all duration-500 pb-20"
       style={{ 
         backgroundImage: `linear-gradient(to bottom, rgba(3, 7, 18, 0.92), rgba(3, 7, 18, 0.97)), url('${currentBg}')` 
       }}
     >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pt-6">
+        {/* SEMUA KONTEN HALAMAN DI SINI (Header, Grid, Kartu, dll) */}
+      </div>
+    </div>
+  );
 
       {/* Page Header */}
       <div className="text-center max-w-3xl mx-auto pt-4">
