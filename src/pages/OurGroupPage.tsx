@@ -35,7 +35,7 @@ export const OurGroupPage: React.FC = () => {
   const [selectedGroupModal, setSelectedGroupModal] = useState<CommunityGroup | null>(null);
 
   // State untuk background custom dari folder public di halaman OurGroup
-  const [currentBg, setCurrentBg] = useState<string>('/backgrounds/fsa_cyber_headquarters.jpg');
+  const [currentBg, setCurrentBg] = useState<string>('/backgrounds/Pages.jpeg');
 
   const backgroundOptions = [
     { label: 'Cyber HQ', path: '/backgrounds/fsa_cyber_headquarters.jpg' },
