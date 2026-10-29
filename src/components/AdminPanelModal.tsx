@@ -43,11 +43,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
   } = useBroadcast();
   const { t } = useLanguage();
   
-  // Menggunakan useAuth untuk Google Pop-up Login tanpa input teks (Aman dari XSS)
+  // Autentikasi Google Pop-up eksklusif yang aman dari XSS
   const { user, loading: authLoading, error: authError, loginWithGoogle, logout } = useAuth();
   const isAdmin = !!user;
 
-  // Active Admin Sub-Tab (Ditambah 'schedule' untuk jadwal seleksi Firestore)
+  // Tab aktif admin untuk semua halaman/fitur yang bisa diubah
   const [adminTab, setAdminTab] = useState<'broadcast' | 'groups' | 'schedule' | 'firebase'>('broadcast');
 
   // Broadcast Form
@@ -234,7 +234,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
 
         {/* Content */}
         {!isAdmin ? (
-          /* Login Screen via Google Pop-up (No Input Text / Secure from XSS) */
+          /* Login Screen via Google Pop-up (No Input Text / Secure from XSS)[cite: 3] */
           <div className="py-12 max-w-md mx-auto w-full text-center space-y-6">
             <div className="w-16 h-16 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 mx-auto flex items-center justify-center text-cyan-300 shadow-lg shadow-cyan-500/10">
               <Lock className="w-8 h-8" />
@@ -242,7 +242,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
             <div>
               <h3 className="text-lg font-bold text-white font-heading">Autentikasi Pengurus Resmi</h3>
               <p className="text-xs text-slate-400 mt-1 font-mono">
-                Gunakan akun Google resmi yang terdaftar untuk mengakses kontrol panel eksklusif.
+                Gunakan akun Google resmi yang terdaftar untuk mengakses seluruh halaman kontrol panel eksklusif.
               </p>
             </div>
 
@@ -264,7 +264,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
             </button>
           </div>
         ) : (
-          /* Authenticated Dashboard */
+          /* Authenticated Dashboard: Seluruh halaman dan fitur perubahan data di bawah ini */
           <div className="flex-1 flex flex-col min-h-0 pt-4">
             {/* Tabs Bar */}
             <div className="flex items-center gap-2 border-b border-white/10 pb-3 shrink-0 overflow-x-auto scrollbar-none flex-nowrap">

@@ -46,7 +46,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenClock }) =
   };
 
   return (
-    <div className="space-y-24 pb-20">
+    <div 
+      className="space-y-24 pb-20 relative bg-cover bg-center bg-no-repeat bg-fixed"
+      style={{ 
+        backgroundImage: "linear-gradient(to bottom, rgba(3, 7, 18, 0.88), rgba(3, 7, 18, 0.95)), url('/backgrounds/Home.jpeg')" 
+      }}
+    >
       {/* Executive Hero Section */}
       <section className="relative pt-6 sm:pt-12">
         <div className="max-w-5xl mx-auto text-center px-4">
