@@ -257,7 +257,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-mono text-xs uppercase tracking-wider font-bold">{language}</span>
             </button>
 
-            {/* Executive Admin Panel Launch Button */}
+            {/* Executive Admin Panel Launch Button (Langsung memicu popup login Google via onOpenAdminPanel) */}
             <button
               onClick={onOpenAdminPanel}
               className="px-3 xl:px-4 py-1.5 text-xs font-heading font-extrabold text-slate-950 bg-gradient-to-r from-cyan-400 via-sky-300 to-cyan-300 hover:from-white hover:to-cyan-200 rounded-xl transition-all shadow-[0_0_18px_rgba(34,211,238,0.25)] hover:shadow-[0_0_24px_rgba(34,211,238,0.45)] flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 active:scale-95 duration-150"
