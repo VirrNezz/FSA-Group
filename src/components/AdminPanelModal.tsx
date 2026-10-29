@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useBroadcast } from '../context/BroadcastContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../hooks/useAuth';
 import { CommunityGroup } from '../types';
 import { COMMUNITY_INFO } from '../data/communityData';
 import { db } from '../firebase';
@@ -20,7 +21,8 @@ import {
   AlertCircle,
   Copy,
   Clock,
-  Save
+  Save,
+  LogOut
 } from 'lucide-react';
 
 interface AdminPanelModalProps {
@@ -32,10 +34,6 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
   const {
     broadcasts,
     groups,
-    isAdmin,
-    adminUser,
-    loginAsAdmin,
-    logoutAdmin,
     addBroadcast,
     deleteBroadcast,
     clearAllBroadcasts,
@@ -44,10 +42,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
     triggerDemoBroadcast
   } = useBroadcast();
   const { t } = useLanguage();
-
-  // Authentication State
-  const [emailInput, setEmailInput] = useState('');
-  const [authError, setAuthError] = useState('');
+  
+  // Menggunakan useAuth untuk Google Pop-up Login tanpa input teks (Aman dari XSS)
+  const { user, loading: authLoading, error: authError, loginWithGoogle, logout } = useAuth();
+  const isAdmin = !!user;
 
   // Active Admin Sub-Tab (Ditambah 'schedule' untuk jadwal seleksi Firestore)
   const [adminTab, setAdminTab] = useState<'broadcast' | 'groups' | 'schedule' | 'firebase'>('broadcast');
@@ -130,20 +128,6 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
 
   if (!isOpen) return null;
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    const success = loginAsAdmin(emailInput);
-    if (!success) {
-      setAuthError('Email tidak terdaftar sebagai pengurus resmi FSA Sharknoxza.');
-    }
-  };
-
-  const handleQuickDemoLogin = (email: string) => {
-    setEmailInput(email);
-    loginAsAdmin(email);
-  };
-
   const handleCreateBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
     if (!bcTitle.trim() || !bcContent.trim()) return;
@@ -219,7 +203,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
                 <span>FSA Sharknoxza Admin Panel</span>
                 {isAdmin && (
                   <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-mono">
-                    {adminUser?.role || 'Admin'}
+                    Authorized Admin
                   </span>
                 )}
               </h2>
@@ -231,11 +215,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
           <div className="flex items-center gap-2">
             {isAdmin && (
               <button
-                onClick={logoutAdmin}
-                className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs transition-colors cursor-pointer"
-                title="Keluar dari sesi Admin"
+                onClick={logout}
+                className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs transition-colors cursor-pointer flex items-center gap-1.5 font-heading"
               >
-                Logout
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Logout</span>
               </button>
             )}
             <button
@@ -250,65 +234,34 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
 
         {/* Content */}
         {!isAdmin ? (
-          /* Login Screen */
-          <div className="py-8 max-w-md mx-auto w-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 mx-auto flex items-center justify-center text-cyan-300 mb-4 shadow-lg shadow-cyan-500/10">
+          /* Login Screen via Google Pop-up (No Input Text / Secure from XSS) */
+          <div className="py-12 max-w-md mx-auto w-full text-center space-y-6">
+            <div className="w-16 h-16 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 mx-auto flex items-center justify-center text-cyan-300 shadow-lg shadow-cyan-500/10">
               <Lock className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-1">Autentikasi Pengurus</h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Masukkan email pengurus/admin yang terdaftar untuk mengakses kontrol panel.
-            </p>
-
-            <form onSubmit={handleLogin} className="space-y-4 text-left">
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Email Akun Admin
-                </label>
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="contoh: ochalopha@gmail.com atau admin@fsa.my.id"
-                  required
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-cyan-400 transition-colors"
-                />
-              </div>
-
-              {authError && (
-                <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{authError}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-500 hover:from-cyan-300 hover:to-sky-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-cyan-500/20 cursor-pointer"
-              >
-                Masuk ke Admin Panel
-              </button>
-            </form>
-
-            <div className="mt-6 pt-5 border-t border-white/10 text-xs text-slate-400">
-              <p className="mb-2.5 font-medium text-slate-300">Akses Cepat Pengurus Terdaftar:</p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('ochalopha@gmail.com')}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-cyan-300 hover:text-cyan-200 text-xs transition-colors cursor-pointer"
-                >
-                  Masuk sebagai Ochalo (Web Architect)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('owner@fsa.my.id')}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs transition-colors cursor-pointer"
-                >
-                  Masuk sebagai Founder / Owner
-                </button>
-              </div>
+            <div>
+              <h3 className="text-lg font-bold text-white font-heading">Autentikasi Pengurus Resmi</h3>
+              <p className="text-xs text-slate-400 mt-1 font-mono">
+                Gunakan akun Google resmi yang terdaftar untuk mengakses kontrol panel eksklusif.
+              </p>
             </div>
+
+            {authError && (
+              <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2 text-left">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={loginWithGoogle}
+              disabled={authLoading}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-500 hover:from-cyan-300 hover:to-sky-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 cursor-pointer font-heading"
+            >
+              <ShieldCheck className="w-5 h-5" />
+              <span>{authLoading ? 'Memproses Google Login...' : 'Login dengan Google Admin'}</span>
+            </button>
           </div>
         ) : (
           /* Authenticated Dashboard */
@@ -341,7 +294,6 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
                 <span>Manajemen 11 Grup ({groups.length})</span>
               </button>
 
-              {/* TAB BARU: JADWAL SELEKSI FIRESTORE */}
               <button
                 type="button"
                 onClick={() => setAdminTab('schedule')}
@@ -695,7 +647,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
               </div>
             )}
 
-            {/* SUB-TAB BARU: PENGATURAN JADWAL SELEKSI FIRESTORE */}
+            {/* Sub-Tab 3: Pengaturan Jadwal Seleksi Firestore */}
             {adminTab === 'schedule' && (
               <div className="overflow-y-auto pr-1 flex-1 py-4 space-y-4">
                 <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/30">
