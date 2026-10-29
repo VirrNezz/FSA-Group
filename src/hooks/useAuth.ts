@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
-  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider,
   signOut, 
   onAuthStateChanged, 
   User 
@@ -17,37 +18,56 @@ const ALLOWED_ADMIN_EMAILS = [
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      const email = currentUser?.email?.toLowerCase();
+
       // Pastikan user yang masuk ada di dalam daftar whitelist email khusus
-      if (currentUser && currentUser.email && ALLOWED_ADMIN_EMAILS.includes(currentUser.email)) {
+      if (currentUser && email && ALLOWED_ADMIN_EMAILS.includes(email)) {
         setUser(currentUser);
       } else if (currentUser) {
         // Jika akun valid di Firebase Auth tapi tidak ada di daftar khusus, paksa logout
-        signOut(auth);
+        await signOut(auth);
         setUser(null);
+        setError("Akses ditolak! Akun Google kamu bukan Admin resmi.");
       } else {
         setUser(null);
       }
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, pass: string) => {
-    // Validasi awal sebelum request ke Firebase (opsional tapi bagus untuk efisiensi)
-    if (!ALLOWED_ADMIN_EMAILS.includes(email)) {
-      throw new Error("Akses ditolak: Email ini tidak memiliki hak akses sebagai admin.");
-    }
+  const loginWithGoogle = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const userEmail = result?.user?.email?.toLowerCase();
 
-    const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-    return userCredential;
+      // Pengecekan langsung setelah pop-up Google selesai dipilih
+      if (userEmail && !ALLOWED_ADMIN_EMAILS.includes(userEmail)) {
+        await signOut(auth);
+        setUser(null);
+        throw new Error("Akses ditolak: Email ini tidak memiliki hak akses sebagai admin.");
+      }
+      return result;
+    } catch (err: any) {
+      console.error("Popup login error:", err);
+      setError(err?.message || "Gagal melakukan login dengan Google.");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = async () => {
     return await signOut(auth);
   };
 
-  return { user, loading, login, logout };
+  return { user, loading, error, loginWithGoogle, logout };
 }
