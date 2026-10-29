@@ -9,9 +9,9 @@ import { auth } from '../firebase';
 
 // Daftar 3 email khusus yang diizinkan masuk sebagai admin
 const ALLOWED_ADMIN_EMAILS = [
-  "admin1@fscgroup.id", // Ganti dengan email admin pertama
-  "admin2@fscgroup.id", // Ganti dengan email admin kedua
-  "admin3@fscgroup.id"  // Ganti dengan email admin ketiga
+  "ochalopha@gmail.com",
+  "fsasharknoxza@gmail.com",
+  "fsasociety@gmail.com"
 ];
 
 export function useAuth() {
