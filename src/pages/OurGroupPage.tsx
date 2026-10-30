@@ -60,20 +60,41 @@ export const OurGroupPage: React.FC = () => {
   } | null>(null);
   const [selectionLoading, setSelectionLoading] = useState<boolean>(true);
 
-  // State untuk validasi jam operasional (09:00 pagi sampai malam / 23:59)
+  // State untuk validasi jam operasional (09:00 pagi sampai 21:00 malam)
   const [isWithinOperationalHours, setIsWithinOperationalHours] = useState<boolean>(true);
 
-  // Cek cache localStorage saat pertama kali load halaman
+  // Validasi real-time ke Firestore saat halaman dimuat
   useEffect(() => {
+    const checkServerVerification = async () => {
+      const savedPhone = localStorage.getItem('fsa_verified_phone');
+      if (savedPhone) {
+        try {
+          const docRef = doc(db, "verified_members", savedPhone);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists() && docSnap.data().isPassed) {
+            setIsVerifiedLocally(true);
+          } else {
+            localStorage.removeItem('fsa_is_passed');
+            localStorage.removeItem('fsa_verified_phone');
+            setIsVerifiedLocally(false);
+          }
+        } catch (error) {
+          console.error("Gagal memvalidasi status verifikasi server:", error);
+        }
+      }
+    };
+
     const cachedPassed = localStorage.getItem('fsa_is_passed');
     if (cachedPassed === 'true') {
       setIsVerifiedLocally(true);
     }
+    checkServerVerification();
 
-    // Cek jam operasional (Jam 09:00 s.d. 23:59)
+    // Cek jam operasional (Jam 09:00 s.d. 21:00)
     const checkOperationalHours = () => {
       const currentHour = new Date().getHours();
-      if (currentHour >= 9 && currentHour <= 23) {
+      if (currentHour >= 8 && currentHour <= 21) {
         setIsWithinOperationalHours(true);
       } else {
         setIsWithinOperationalHours(false);
@@ -122,7 +143,7 @@ export const OurGroupPage: React.FC = () => {
 
   const handleCopyLink = (group: CommunityGroup) => {
     if (!isWithinOperationalHours && !isVerifiedLocally) {
-      alert('Akses diblokir: Di luar jam operasional seleksi (09:00 - Malam).');
+      alert('Akses diblokir: Di luar jam operasional seleksi (09:00 - 21:00).');
       return;
     }
     navigator.clipboard.writeText(group.targetUrl);
@@ -141,7 +162,7 @@ export const OurGroupPage: React.FC = () => {
     }
   };
 
-  // MODIFIKASI: Setelah verifikasi sukses, HANYA buka kunci halaman (tidak langsung buka link grup)
+  // Setelah verifikasi sukses, simpan nomor dan buka kunci halaman utama
   const handleVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumberInput.trim()) return;
@@ -150,17 +171,18 @@ export const OurGroupPage: React.FC = () => {
     setVerifyError('');
 
     try {
-      const docRef = doc(db, "verified_members", phoneNumberInput.trim());
+      const cleanPhone = phoneNumberInput.trim();
+      const docRef = doc(db, "verified_members", cleanPhone);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists() && docSnap.data().isPassed) {
-        localStorage.setItem('fsa_verified_phone', phoneNumberInput.trim());
+        localStorage.setItem('fsa_verified_phone', cleanPhone);
         localStorage.setItem('fsa_is_passed', 'true');
         setIsVerifiedLocally(true);
 
         alert('Verifikasi Berhasil! Semua divisi grup kini terbuka untuk Anda.');
         setShowVerifyModal(false);
-        setTargetGroupToJoin(null); // Reset target agar halaman terbuka normal menampilkan semua grup
+        setTargetGroupToJoin(null);
       } else {
         setVerifyError('Nomor telepon belum terdaftar atau belum lulus seleksi.');
       }
@@ -243,7 +265,7 @@ export const OurGroupPage: React.FC = () => {
                 Live Database Status & Operational Hours
               </div>
               <h3 className="text-base font-bold text-white font-heading">
-                Status Seleksi & Jadwal (09:00 - Malam)
+                Status Seleksi & Jadwal (09:00 - 21:00)
               </h3>
             </div>
 
@@ -270,7 +292,7 @@ export const OurGroupPage: React.FC = () => {
             ) : (
               <div className="space-y-2">
                 <p className="text-xs sm:text-sm text-slate-300">
-                  📢 Jam Layanan Seleksi & Gabung Grup: <strong className="text-cyan-300">Pukul 09:00 Pagi s.d. Malam (23:59)</strong>.
+                  📢 Jam Layanan Seleksi & Gabung Grup: <strong className="text-cyan-300">Pukul 09:00 Pagi s.d. 21:00 Malam</strong>.
                 </p>
                 {!isWithinOperationalHours && (
                   <p className="text-xs font-mono text-rose-400">
@@ -282,7 +304,7 @@ export const OurGroupPage: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* --- KONDISI TAMPILAN LAYAR PENUH (GATEKEEPER) JIKA BELUM SELEKSI / DILUAR JAM --- */}
+        {/* --- KONDISI TAMPILAN LAYAR PENUH (GATEKEEPER) JIKA BELUM TERVERIFIKASI / DI LUAR JAM --- */}
         {isGateBlocked ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -301,7 +323,7 @@ export const OurGroupPage: React.FC = () => {
                 Verifikasi Nomor WhatsApp Diperlukan
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-                Halaman direktori grup dikunci karena berada di luar jam operasional resmi (<strong className="text-cyan-300">09:00 - Malam</strong>). Masukkan nomor WhatsApp terdaftar untuk membuka seluruh daftar divisi grup.
+                Halaman direktori grup dikunci karena berada di luar jam operasional resmi (<strong className="text-cyan-300">09:00 - 21:00</strong>). Masukkan nomor WhatsApp terdaftar untuk membuka seluruh daftar divisi grup.
               </p>
             </div>
 
