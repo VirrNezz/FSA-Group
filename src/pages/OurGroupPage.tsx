@@ -60,12 +60,30 @@ export const OurGroupPage: React.FC = () => {
   } | null>(null);
   const [selectionLoading, setSelectionLoading] = useState<boolean>(true);
 
+  // State untuk validasi jam operasional (09:00 pagi sampai malam / 23:59)
+  const [isWithinOperationalHours, setIsWithinOperationalHours] = useState<boolean>(true);
+
   // Cek cache localStorage saat pertama kali load halaman
   useEffect(() => {
     const cachedPassed = localStorage.getItem('fsa_is_passed');
     if (cachedPassed === 'true') {
       setIsVerifiedLocally(true);
     }
+
+    // Cek jam operasional (Jam 09:00 s.d. 23:59)
+    const checkOperationalHours = () => {
+      const currentHour = new Date().getHours();
+      // Jam 9 pagi (9) sampai malam (23)
+      if (currentHour >= 9 && currentHour <= 23) {
+        setIsWithinOperationalHours(true);
+      } else {
+        setIsWithinOperationalHours(false);
+      }
+    };
+
+    checkOperationalHours();
+    const interval = setInterval(checkOperationalHours, 60000); // Cek tiap menit
+    return () => clearInterval(interval);
   }, []);
 
   // Mengambil data real-time dari Firestore collection 'settings', document 'selection_schedule'
@@ -104,12 +122,25 @@ export const OurGroupPage: React.FC = () => {
   }, []);
 
   const handleCopyLink = (group: CommunityGroup) => {
+    if (!isWithinOperationalHours && !isVerifiedLocally) {
+      alert('Akses diblokir: Diluar jam operasional seleksi (09:00 - Malam).');
+      return;
+    }
     navigator.clipboard.writeText(group.targetUrl);
     setCopiedId(group.id);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleJoinAction = (group: CommunityGroup) => {
+    // Blokir jika di luar jam operasional dan belum verifikasi lokal
+    if (!isWithinOperationalHours && !isVerifiedLocally) {
+      setTargetGroupToJoin(group);
+      setPhoneNumberInput('');
+      setVerifyError('Akses ditutup: Di luar jam operasional seleksi (Pukul 09:00 - Malam). Verifikasi nomor WhatsApp Anda.');
+      setShowVerifyModal(true);
+      return;
+    }
+
     if (selectionStatus?.isCurrentlyOpen || isVerifiedLocally) {
       window.open(group.targetUrl, '_blank');
     } else {
@@ -166,6 +197,9 @@ export const OurGroupPage: React.FC = () => {
     return matchesFilter && matchesSearch;
   });
 
+  // TAMPILAN LAYAR PENUH (GATEKEEPER) JIKA PENGUNJUNG BELUM SELEKSI / DI LUAR JAM OPERASIONAL
+  const isGateBlocked = (!isWithinOperationalHours || !selectionStatus?.isCurrentlyOpen) && !isVerifiedLocally;
+
   return (
     <div 
       className="min-h-screen w-full bg-fixed bg-cover bg-center bg-no-repeat transition-all duration-500 pb-20"
@@ -207,7 +241,7 @@ export const OurGroupPage: React.FC = () => {
           </div>
         </div>
 
-        {/* --- SECTIONS STATUS SELEKSI DARI FIRESTORE --- */}
+        {/* --- SECTIONS STATUS SELEKSI DARI FIRESTORE & JAM OPERASIONAL --- */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -218,10 +252,10 @@ export const OurGroupPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-400 mb-1">
-                Live Database Status
+                Live Database Status & Operational Hours
               </div>
               <h3 className="text-base font-bold text-white font-heading">
-                Status Seleksi & Pendaftaran Komunitas
+                Status Seleksi & Jadwal (09:00 - Malam)
               </h3>
             </div>
 
@@ -233,37 +267,26 @@ export const OurGroupPage: React.FC = () => {
                 </span>
               )}
 
-              {!selectionLoading && selectionStatus && (
-                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold font-mono border ${
-                  selectionStatus.isCurrentlyOpen 
-                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
-                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                }`}>
-                  <span className={`w-2 h-2 rounded-full ${selectionStatus.isCurrentlyOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
-                  <span>{selectionStatus.isCurrentlyOpen ? 'SELEKSI DIBUKA 🟢' : 'SELEKSI DITUTUP 🔴'}</span>
-                </div>
-              )}
+              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold font-mono border ${
+                isWithinOperationalHours ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${isWithinOperationalHours ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
+                <span>{isWithinOperationalHours ? 'JAM OPERASIONAL BUKA 🟢' : 'DILUAR JAM OPERASIONAL 🔴'}</span>
+              </div>
             </div>
           </div>
 
           <div className="mt-4 pt-4 border-t border-white/[0.08]">
             {selectionLoading ? (
               <p className="text-xs font-mono text-slate-400 animate-pulse">Memuat jadwal dari Firestore...</p>
-            ) : selectionStatus?.isCurrentlyOpen ? (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-slate-300">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-cyan-400" />
-                  <span>Pendaftaran ditutup pada: <strong className="text-white">{selectionStatus.closeTime?.toLocaleString('id-ID')}</strong></span>
-                </div>
-              </div>
             ) : (
               <div className="space-y-2">
                 <p className="text-xs sm:text-sm text-slate-300">
-                  📢 {selectionStatus?.announcement}
+                  📢 Jam Layanan Seleksi & Gabung Grup: <strong className="text-cyan-300">Pukul 09:00 Pagi s.d. Malam (23:59)</strong>.
                 </p>
-                {selectionStatus?.openTime && (
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    Dibuka kembali pada: <span className="text-cyan-300">{selectionStatus.openTime.toLocaleString('id-ID')}</span>
+                {!isWithinOperationalHours && (
+                  <p className="text-xs font-mono text-rose-400">
+                    ⚠️ Saat ini di luar jam operasional. Tautan gabung grup dikunci dan memerlukan verifikasi nomor WhatsApp khusus.
                   </p>
                 )}
               </div>
@@ -271,149 +294,191 @@ export const OurGroupPage: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Executive Control Bar: Search & Status Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-20px' }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="executive-glass rounded-2xl p-4 border border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xl"
-        >
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="Cari divisi, kategori, atau nomor #01 - #11..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-slate-500 text-xs sm:text-sm focus:outline-none focus:border-cyan-400/60 transition-all font-sans"
-            />
-          </div>
+        {/* --- KONDISI TAMPILAN LAYAR PENUH (GATEKEEPER) JIKA BELUM SELEKSI / DILUAR JAM --- */}
+        {isGateBlocked ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="executive-glass rounded-3xl p-8 sm:p-12 border border-cyan-400/40 text-center space-y-6 shadow-2xl my-10 backdrop-blur-2xl"
+          >
+            <div className="w-16 h-16 rounded-3xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center mx-auto text-cyan-400 shadow-lg">
+              <Lock className="w-8 h-8" />
+            </div>
 
-          <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/[0.06]">
-            <button
-              onClick={() => setFilterStatus('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer font-heading ${
-                filterStatus === 'all' ? 'bg-white/[0.1] text-cyan-300 shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
+            <div className="space-y-2 max-w-xl mx-auto">
+              <span className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-400">
+                Akses Eksklusif Terkunci 🔒
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">
+                Sesi Seleksi Utama & Verifikasi WhatsApp Diperlukan
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+                Halaman direktori grup dikunci karena berada di luar jam operasional resmi (<strong className="text-cyan-300">09:00 - Malam</strong>) atau seleksi belum dibuka. Silakan masukkan nomor WhatsApp terdaftar atau tunggu hingga jadwal dibuka kembali.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setTargetGroupToJoin(groups[0] || { id: 'general', name: 'FSA General Hub', targetUrl: '#' });
+                  setPhoneNumberInput('');
+                  setVerifyError('');
+                  setShowVerifyModal(true);
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-300 hover:bg-white text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_20px_rgba(34,211,238,0.3)] font-heading"
+              >
+                <Phone className="w-4 h-4" />
+                <span>Verifikasi Nomor WhatsApp Sekarang 📱</span>
+              </button>
+            </div>
+          </motion.div>
+        ) : (
+          <>
+            {/* Executive Control Bar: Search & Status Filters */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-20px' }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="executive-glass rounded-2xl p-4 border border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xl"
             >
-              {t('groups.filterAll')}
-            </button>
-            <button
-              onClick={() => setFilterStatus('open')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer font-heading ${
-                filterStatus === 'open' ? 'bg-emerald-500/20 text-emerald-300 shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {t('groups.filterOpen')}
-            </button>
-          </div>
-        </motion.div>
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  placeholder="Cari divisi, kategori, atau nomor #01 - #11..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-slate-500 text-xs sm:text-sm focus:outline-none focus:border-cyan-400/60 transition-all font-sans"
+                />
+              </div>
 
-        {/* Horizontal Side-by-Side Strip */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-slate-400 px-1 font-mono">
-            <span className="flex items-center gap-2 text-cyan-300">
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>{t('groups.scrollHint')}</span>
-            </span>
-            <span className="text-slate-500">
-              {filteredGroups.length} / {groups.length} Divisi Aktif
-            </span>
-          </div>
-
-          <div className="overflow-x-auto pb-4 pt-1 flex gap-4 sm:gap-5 snap-x scrollbar-thin max-w-full">
-            {filteredGroups.map((group, idx) => {
-              const isCopied = copiedId === group.id;
-              const isOpen = group.status === 'open' || selectionStatus?.isCurrentlyOpen || isVerifiedLocally;
-
-              return (
-                <motion.div
-                  key={group.id}
-                  initial={{ opacity: 0, y: 32, scale: 0.96 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  viewport={{ once: true, margin: '-20px' }}
-                  transition={{ duration: 0.5, delay: (idx % 6) * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                  className="w-[84vw] max-w-[340px] sm:w-[360px] shrink-0 snap-start executive-card rounded-3xl p-5 sm:p-6 border border-white/[0.08] hover:border-cyan-400/40 transition-all duration-300 flex flex-col justify-between shadow-xl group"
+              <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/[0.06]">
+                <button
+                  onClick={() => setFilterStatus('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer font-heading ${
+                    filterStatus === 'all' ? 'bg-white/[0.1] text-cyan-300 shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="font-mono text-xs font-bold text-cyan-300 tracking-wider">
-                        DIVISI #{String(group.number).padStart(2, '0')}
-                      </span>
+                  {t('groups.filterAll')}
+                </button>
+                <button
+                  onClick={() => setFilterStatus('open')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer font-heading ${
+                    filterStatus === 'open' ? 'bg-emerald-500/20 text-emerald-300 shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {t('groups.filterOpen')}
+                </button>
+              </div>
+            </motion.div>
 
-                      <div className="flex items-center gap-1.5 text-[11px] font-medium">
-                        <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
-                        <span className={isOpen ? 'text-emerald-300' : 'text-rose-400'}>
-                          {isOpen ? t('groups.status.open') : t('groups.status.closed')}
-                        </span>
-                      </div>
-                    </div>
+            {/* Horizontal Side-by-Side Strip */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs text-slate-400 px-1 font-mono">
+                <span className="flex items-center gap-2 text-cyan-300">
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>{t('groups.scrollHint')}</span>
+                </span>
+                <span className="text-slate-500">
+                  {filteredGroups.length} / {groups.length} Divisi Aktif
+                </span>
+              </div>
 
-                    <h3 className="text-base font-bold text-white mb-1 line-clamp-1 group-hover:text-cyan-200 transition-colors">
-                      {group.name}
-                    </h3>
+              <div className="overflow-x-auto pb-4 pt-1 flex gap-4 sm:gap-5 snap-x scrollbar-thin max-w-full">
+                {filteredGroups.map((group, idx) => {
+                  const isCopied = copiedId === group.id;
+                  const isOpen = (group.status === 'open' || selectionStatus?.isCurrentlyOpen || isVerifiedLocally) && isWithinOperationalHours;
 
-                    <div className="flex items-center gap-2 text-xs text-slate-400 mb-3 font-mono">
-                      <span className="text-cyan-400">{group.platform}</span>
-                      <span>·</span>
-                      <span>{group.category}</span>
-                    </div>
-
-                    <p className="text-xs text-slate-300/85 leading-relaxed line-clamp-3 mb-4 font-normal">
-                      {group.description}
-                    </p>
-
-                    <div className="p-2.5 rounded-xl bg-black/40 border border-white/[0.05] font-mono text-[11px] text-cyan-300/90 truncate mb-4">
-                      {group.targetUrl}
-                    </div>
-                  </div>
-
-                  {/* Card Actions dengan proteksi verifikasi telepon */}
-                  <div className="space-y-2 pt-3 border-t border-white/[0.08]">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleJoinAction(group)}
-                        className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                          isOpen || isVerifiedLocally
-                            ? 'bg-cyan-300 hover:bg-white text-slate-950 shadow-[0_0_15px_rgba(34,211,238,0.25)]'
-                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30'
-                        }`}
-                      >
-                        <span>{isOpen || isVerifiedLocally ? t('groups.joinBtn') : 'Verifikasi No. Telp 🔒'}</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleCopyLink(group)}
-                        className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.08] transition-colors cursor-pointer"
-                        title={t('groups.copyBtn')}
-                      >
-                        {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={() => setSelectedGroupModal(group)}
-                      className="w-full py-1.5 rounded-lg text-[11px] text-slate-400 hover:text-cyan-300 transition-colors flex items-center justify-center gap-1 cursor-pointer font-mono"
+                  return (
+                    <motion.div
+                      key={group.id}
+                      initial={{ opacity: 0, y: 32, scale: 0.96 }}
+                      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                      viewport={{ once: true, margin: '-20px' }}
+                      transition={{ duration: 0.5, delay: (idx % 6) * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                      className="w-[84vw] max-w-[340px] sm:w-[360px] shrink-0 snap-start executive-card rounded-3xl p-5 sm:p-6 border border-white/[0.08] hover:border-cyan-400/40 transition-all duration-300 flex flex-col justify-between shadow-xl group"
                     >
-                      <Info className="w-3 h-3" />
-                      <span>Detail & Panduan Masuk</span>
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="font-mono text-xs font-bold text-cyan-300 tracking-wider">
+                            DIVISI #{String(group.number).padStart(2, '0')}
+                          </span>
 
-        {/* --- MODAL VERIFIKASI NOMOR TELEPON --- */}
+                          <div className="flex items-center gap-1.5 text-[11px] font-medium">
+                            <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
+                            <span className={isOpen ? 'text-emerald-300' : 'text-rose-400'}>
+                              {isOpen ? t('groups.status.open') : 'DITUTUP / TERKUNCI 🔒'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <h3 className="text-base font-bold text-white mb-1 line-clamp-1 group-hover:text-cyan-200 transition-colors">
+                          {group.name}
+                        </h3>
+
+                        <div className="flex items-center gap-2 text-xs text-slate-400 mb-3 font-mono">
+                          <span className="text-cyan-400">{group.platform}</span>
+                          <span>·</span>
+                          <span>{group.category}</span>
+                        </div>
+
+                        <p className="text-xs text-slate-300/85 leading-relaxed line-clamp-3 mb-4 font-normal">
+                          {group.description}
+                        </p>
+
+                        <div className="p-2.5 rounded-xl bg-black/40 border border-white/[0.05] font-mono text-[11px] text-cyan-300/90 truncate mb-4">
+                          {group.targetUrl}
+                        </div>
+                      </div>
+
+                      {/* Card Actions dengan proteksi verifikasi telepon & jam operasional */}
+                      <div className="space-y-2 pt-3 border-t border-white/[0.08]">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleJoinAction(group)}
+                            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                              isOpen || isVerifiedLocally
+                                ? 'bg-cyan-300 hover:bg-white text-slate-950 shadow-[0_0_15px_rgba(34,211,238,0.25)]'
+                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30'
+                            }`}
+                          >
+                            <span>{isOpen || isVerifiedLocally ? t('groups.joinBtn') : 'Verifikasi No. WA 🔒'}</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => handleCopyLink(group)}
+                            className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.08] transition-colors cursor-pointer"
+                            title={t('groups.copyBtn')}
+                          >
+                            {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => setSelectedGroupModal(group)}
+                          className="w-full py-1.5 rounded-lg text-[11px] text-slate-400 hover:text-cyan-300 transition-colors flex items-center justify-center gap-1 cursor-pointer font-mono"
+                        >
+                          <Info className="w-3 h-3" />
+                          <span>Detail & Panduan Masuk</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* --- MODAL VERIFIKASI NOMOR TELEPON (WHATSAPP) --- */}
         {showVerifyModal && targetGroupToJoin && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
             <div className="w-full max-w-md executive-glass rounded-3xl p-6 sm:p-7 border border-cyan-400/40 shadow-2xl relative">
               <div className="flex items-start justify-between pb-4 border-b border-white/[0.08] mb-4">
                 <div>
-                  <span className="font-mono text-xs font-bold text-cyan-400">VERIFIKASI SELEKSI KELOMPOK</span>
+                  <span className="font-mono text-xs font-bold text-cyan-400">VERIFIKASI SELEKSI & WHATSAPP</span>
                   <h3 className="text-lg font-bold text-white mt-1 font-heading">
                     {targetGroupToJoin.name}
                   </h3>
@@ -427,13 +492,13 @@ export const OurGroupPage: React.FC = () => {
               </div>
 
               <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-                Seleksi saat ini sedang ditutup. Masukkan nomor telepon (WhatsApp) yang terdaftar untuk membuka akses eksklusif ke grup ini. Perangkat Anda akan diingat otomatis.
+                Di luar jam operasional (09:00 - Malam) atau seleksi ditutup. Masukkan nomor WhatsApp yang telah terdaftar dan lulus seleksi di database Firestore untuk membuka akses grup.
               </p>
 
               <form onSubmit={handleVerifySubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-mono text-slate-400 mb-1.5 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-cyan-400" /> Nomor Telepon / WhatsApp
+                    <Phone className="w-3.5 h-3.5 text-cyan-400" /> Nomor WhatsApp Terdaftar
                   </label>
                   <input
                     type="tel"
