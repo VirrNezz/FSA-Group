@@ -4,6 +4,8 @@ import { AdminProfile } from '../types';
 import { ADMIN_TEAM } from '../data/communityData';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../hooks/useAuth';
+import { db } from '../firebase';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import {
   ShieldCheck,
   LogOut,
@@ -23,7 +25,8 @@ import {
   User,
   X,
   ChevronRight,
-  ImageIcon
+  ImageIcon,
+  Phone
 } from 'lucide-react';
 
 export const AdminPage: React.FC = () => {
@@ -48,6 +51,38 @@ export const AdminPage: React.FC = () => {
   ]);
 
   const [newItemName, setNewItemName] = useState('');
+
+  // State untuk form tambah member terverifikasi (WhatsApp)
+  const [newPhoneMember, setNewPhoneMember] = useState('');
+  const [newMemberName, setNewMemberName] = useState('');
+  const [verifyingSaveLoading, setVerifyingSaveLoading] = useState(false);
+
+  // Fungsi untuk menyimpan nomor WhatsApp yang lolos seleksi ke Firestore
+  const handleAddVerifiedMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPhoneMember.trim()) return;
+
+    setVerifyingSaveLoading(true);
+    try {
+      const cleanPhone = newPhoneMember.trim();
+      const docRef = doc(db, "verified_members", cleanPhone);
+      
+      await setDoc(docRef, {
+        phoneNumber: cleanPhone,
+        name: newMemberName.trim() || 'Anggota Komunitas',
+        isPassed: true,
+        updatedAt: Timestamp.now()
+      });
+
+      alert(`Sukses! Nomor WhatsApp ${cleanPhone} berhasil didaftarkan ke database seleksi.`);
+      setNewPhoneMember('');
+      setNewMemberName('');
+    } catch (error: any) {
+      alert('Gagal menyimpan data: ' + error.message);
+    } finally {
+      setVerifyingSaveLoading(false);
+    }
+  };
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,6 +317,45 @@ export const AdminPage: React.FC = () => {
                 <LogOut className="w-4 h-4" />
                 <span>Keluar Sesi</span>
               </button>
+            </div>
+
+            {/* --- FORM PENDAFTARAN MEMBER LOLOS SELEKSI (WHATSAPP) --- */}
+            <div className="executive-glass rounded-3xl p-6 sm:p-8 border border-cyan-400/30 shadow-xl space-y-4">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2 font-heading">
+                  <Phone className="w-5 h-5 text-cyan-400" />
+                  <span>Pendaftaran Member Lolos Seleksi (WhatsApp)</span>
+                </h3>
+                <p className="text-xs text-slate-400 font-mono">
+                  Daftarkan nomor WhatsApp member agar dapat melewati gerbang verifikasi di luar jam operasional.
+                </p>
+              </div>
+
+              <form onSubmit={handleAddVerifiedMember} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input
+                  type="text"
+                  placeholder="Nama Member (Opsional)..."
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                />
+                <input
+                  type="tel"
+                  placeholder="Nomor WA (Contoh: 08123456789)..."
+                  value={newPhoneMember}
+                  onChange={(e) => setNewPhoneMember(e.target.value)}
+                  required
+                  className="px-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                />
+                <button
+                  type="submit"
+                  disabled={verifyingSaveLoading}
+                  className="px-4 py-2.5 rounded-xl bg-cyan-300 hover:bg-white text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer font-heading"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{verifyingSaveLoading ? 'Menyimpan...' : 'Daftarkan Member 🚀'}</span>
+                </button>
+              </form>
             </div>
 
             {/* Tabel Manajemen Data di Bawahnya */}
