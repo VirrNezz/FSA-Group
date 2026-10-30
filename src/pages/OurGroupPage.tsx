@@ -73,7 +73,6 @@ export const OurGroupPage: React.FC = () => {
     // Cek jam operasional (Jam 09:00 s.d. 23:59)
     const checkOperationalHours = () => {
       const currentHour = new Date().getHours();
-      // Jam 9 pagi (9) sampai malam (23)
       if (currentHour >= 9 && currentHour <= 23) {
         setIsWithinOperationalHours(true);
       } else {
@@ -82,7 +81,7 @@ export const OurGroupPage: React.FC = () => {
     };
 
     checkOperationalHours();
-    const interval = setInterval(checkOperationalHours, 60000); // Cek tiap menit
+    const interval = setInterval(checkOperationalHours, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -123,7 +122,7 @@ export const OurGroupPage: React.FC = () => {
 
   const handleCopyLink = (group: CommunityGroup) => {
     if (!isWithinOperationalHours && !isVerifiedLocally) {
-      alert('Akses diblokir: Diluar jam operasional seleksi (09:00 - Malam).');
+      alert('Akses diblokir: Di luar jam operasional seleksi (09:00 - Malam).');
       return;
     }
     navigator.clipboard.writeText(group.targetUrl);
@@ -132,16 +131,7 @@ export const OurGroupPage: React.FC = () => {
   };
 
   const handleJoinAction = (group: CommunityGroup) => {
-    // Blokir jika di luar jam operasional dan belum verifikasi lokal
-    if (!isWithinOperationalHours && !isVerifiedLocally) {
-      setTargetGroupToJoin(group);
-      setPhoneNumberInput('');
-      setVerifyError('Akses ditutup: Di luar jam operasional seleksi (Pukul 09:00 - Malam). Verifikasi nomor WhatsApp Anda.');
-      setShowVerifyModal(true);
-      return;
-    }
-
-    if (selectionStatus?.isCurrentlyOpen || isVerifiedLocally) {
+    if (selectionStatus?.isCurrentlyOpen || isVerifiedLocally || isWithinOperationalHours) {
       window.open(group.targetUrl, '_blank');
     } else {
       setTargetGroupToJoin(group);
@@ -151,6 +141,7 @@ export const OurGroupPage: React.FC = () => {
     }
   };
 
+  // MODIFIKASI: Setelah verifikasi sukses, HANYA buka kunci halaman (tidak langsung buka link grup)
   const handleVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumberInput.trim()) return;
@@ -167,12 +158,9 @@ export const OurGroupPage: React.FC = () => {
         localStorage.setItem('fsa_is_passed', 'true');
         setIsVerifiedLocally(true);
 
-        alert('Verifikasi Berhasil! Akses grup dibuka.');
+        alert('Verifikasi Berhasil! Semua divisi grup kini terbuka untuk Anda.');
         setShowVerifyModal(false);
-
-        if (targetGroupToJoin) {
-          window.open(targetGroupToJoin.targetUrl, '_blank');
-        }
+        setTargetGroupToJoin(null); // Reset target agar halaman terbuka normal menampilkan semua grup
       } else {
         setVerifyError('Nomor telepon belum terdaftar atau belum lulus seleksi.');
       }
@@ -197,7 +185,7 @@ export const OurGroupPage: React.FC = () => {
     return matchesFilter && matchesSearch;
   });
 
-  // TAMPILAN LAYAR PENUH (GATEKEEPER) JIKA PENGUNJUNG BELUM SELEKSI / DI LUAR JAM OPERASIONAL
+  // TAMPILAN LAYAR PENUH (GATEKEEPER) JIKA BELUM TERVERIFIKASI / DI LUAR JAM
   const isGateBlocked = (!isWithinOperationalHours || !selectionStatus?.isCurrentlyOpen) && !isVerifiedLocally;
 
   return (
@@ -286,7 +274,7 @@ export const OurGroupPage: React.FC = () => {
                 </p>
                 {!isWithinOperationalHours && (
                   <p className="text-xs font-mono text-rose-400">
-                    ⚠️ Saat ini di luar jam operasional. Tautan gabung grup dikunci dan memerlukan verifikasi nomor WhatsApp khusus.
+                    ⚠️ Saat ini di luar jam operasional. Verifikasi nomor WhatsApp diperlukan untuk membuka akses seluruh direktori divisi.
                   </p>
                 )}
               </div>
@@ -310,17 +298,17 @@ export const OurGroupPage: React.FC = () => {
                 Akses Eksklusif Terkunci 🔒
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">
-                Sesi Seleksi Utama & Verifikasi WhatsApp Diperlukan
+                Verifikasi Nomor WhatsApp Diperlukan
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-                Halaman direktori grup dikunci karena berada di luar jam operasional resmi (<strong className="text-cyan-300">09:00 - Malam</strong>) atau seleksi belum dibuka. Silakan masukkan nomor WhatsApp terdaftar atau tunggu hingga jadwal dibuka kembali.
+                Halaman direktori grup dikunci karena berada di luar jam operasional resmi (<strong className="text-cyan-300">09:00 - Malam</strong>). Masukkan nomor WhatsApp terdaftar untuk membuka seluruh daftar divisi grup.
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <button
                 onClick={() => {
-                  setTargetGroupToJoin(groups[0] || { id: 'general', name: 'FSA General Hub', targetUrl: '#' });
+                  setTargetGroupToJoin(null);
                   setPhoneNumberInput('');
                   setVerifyError('');
                   setShowVerifyModal(true);
@@ -328,7 +316,7 @@ export const OurGroupPage: React.FC = () => {
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-300 hover:bg-white text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_20px_rgba(34,211,238,0.3)] font-heading"
               >
                 <Phone className="w-4 h-4" />
-                <span>Verifikasi Nomor WhatsApp Sekarang 📱</span>
+                <span>Verifikasi Nomor WhatsApp 📱</span>
               </button>
             </div>
           </motion.div>
@@ -373,7 +361,7 @@ export const OurGroupPage: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* Horizontal Side-by-Side Strip */}
+            {/* Horizontal Side-by-Side Strip - Menampilkan Semua Grup Secara Estetik */}
             <div className="space-y-4">
               <div className="flex items-center justify-between text-xs text-slate-400 px-1 font-mono">
                 <span className="flex items-center gap-2 text-cyan-300">
@@ -408,7 +396,7 @@ export const OurGroupPage: React.FC = () => {
                           <div className="flex items-center gap-1.5 text-[11px] font-medium">
                             <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
                             <span className={isOpen ? 'text-emerald-300' : 'text-rose-400'}>
-                              {isOpen ? t('groups.status.open') : 'DITUTUP / TERKUNCI 🔒'}
+                              {isOpen ? t('groups.status.open') : t('groups.status.closed')}
                             </span>
                           </div>
                         </div>
@@ -432,7 +420,7 @@ export const OurGroupPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Card Actions dengan proteksi verifikasi telepon & jam operasional */}
+                      {/* Card Actions */}
                       <div className="space-y-2 pt-3 border-t border-white/[0.08]">
                         <div className="flex items-center gap-2">
                           <button
@@ -472,15 +460,15 @@ export const OurGroupPage: React.FC = () => {
           </>
         )}
 
-        {/* --- MODAL VERIFIKASI NOMOR TELEPON (WHATSAPP) --- */}
-        {showVerifyModal && targetGroupToJoin && (
+        {/* --- MODAL VERIFIKASI NOMOR WHATSAPP --- */}
+        {showVerifyModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
             <div className="w-full max-w-md executive-glass rounded-3xl p-6 sm:p-7 border border-cyan-400/40 shadow-2xl relative">
               <div className="flex items-start justify-between pb-4 border-b border-white/[0.08] mb-4">
                 <div>
                   <span className="font-mono text-xs font-bold text-cyan-400">VERIFIKASI SELEKSI & WHATSAPP</span>
                   <h3 className="text-lg font-bold text-white mt-1 font-heading">
-                    {targetGroupToJoin.name}
+                    Buka Akses Direktori Grup
                   </h3>
                 </div>
                 <button
@@ -492,7 +480,7 @@ export const OurGroupPage: React.FC = () => {
               </div>
 
               <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-                Di luar jam operasional (09:00 - Malam) atau seleksi ditutup. Masukkan nomor WhatsApp yang telah terdaftar dan lulus seleksi di database Firestore untuk membuka akses grup.
+                Masukkan nomor WhatsApp yang terdaftar dan lulus seleksi di database Firestore untuk membuka seluruh halaman direktori grup.
               </p>
 
               <form onSubmit={handleVerifySubmit} className="space-y-4">
@@ -523,7 +511,7 @@ export const OurGroupPage: React.FC = () => {
                   className="w-full py-3 rounded-xl bg-cyan-300 hover:bg-white text-slate-950 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer font-heading shadow-[0_0_15px_rgba(34,211,238,0.25)]"
                 >
                   <ShieldCheck className="w-4 h-4" />
-                  <span>{verifyLoading ? 'Memeriksa Database...' : 'Verifikasi & Buka Akses Grup 🚀'}</span>
+                  <span>{verifyLoading ? 'Memeriksa Database...' : 'Verifikasi & Buka Akses Halaman 🚀'}</span>
                 </button>
               </form>
             </div>
