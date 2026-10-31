@@ -20,25 +20,25 @@ export const COMMUNITY_INFO = {
     en: `FSA Sharknoxza is a premier digital youth, gaming, and creator community built upon solid fraternity and high camaraderie. Here, we embrace every member to grow together across competitive gaming, tech insights, creative collaborations, and warm friendships across all 11 of our community groups. Our community is envisioned as an inclusive, active, and supportive digital second home.`
   },
   vision: {
-    id: 'Menjadi poros komunitas digital nusantara terdepan yang menginspirasi, menjunjung tinggi sportivitas, etika berjejaring, dan membuka peluang kolaborasi luas bagi setiap anggotanya.',
-    en: 'To become the leading digital community hub that inspires, upholds sportsmanship, networking ethics, and unlocks wide collaborative opportunities for every member.'
+    id: 'Menjadi komunitas besar furry yang ramah dan selalu solid',
+    en: 'To become a large, welcoming, and consistently solid furry community'
   },
   missions: [
     {
-      id: 'Membangun komunikasi yang harmonis, aman, dan dinamis di seluruh 11 grup komunitas FSA.',
-      en: 'Foster harmonious, safe, and dynamic communication across all 11 FSA community groups.'
+      id: 'Membangun member solid yg support satu sama lain dengan melakukan hubungan baik dengan anggota',
+      en: 'Building a solid group of members who support one another by fostering good relationships among them.'
     },
     {
-      id: 'Menyediakan wadah kompetisi gaming sehat, sharing edukasi teknologi, dan ruang kreasi.',
-      en: 'Provide platforms for healthy competitive gaming, technological education, and creative spaces.'
+      id: 'membagi ide satu sama lain dan membentuk dalam kepemimpinan dan musyawarah',
+      en: 'sharing ideas with one another and shaping [outcomes] through leadership and deliberation'
     },
     {
-      id: 'Memupuk rasa kekeluargaan dan kepedulian sosial antaranggota di berbagai daerah dan zona waktu.',
-      en: 'Cultivate deep brotherhood and social empathy among members across diverse regions and timezones.'
+      id: 'menyelesaikan masalah, dan berpartisipasi untuk rela membantu',
+      en: 'solving problems, and participating by willingly offering help'
     },
     {
-      id: 'Memperluas sinergi kemitraan strategis dengan berbagai organisasi dan komunitas digital terpercaya.',
-      en: 'Expand strategic partnerships with trusted digital organizations and creator communities.'
+      id: 'enghindari pembullyan dan saling menghargai',
+      en: 'Avoiding bullying and respecting one another'
     }
   ],
   watermark: {
